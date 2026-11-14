@@ -759,6 +759,7 @@ with tab1:
     k4.markdown(f'<div class="hud-card" style="border-top-color:#00d2ff;"><div class="hud-val" style="color:#5ce1ff;">{avg_o2}%</div><div class="hud-lbl">Min Ignition O₂</div></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+    st.caption("🛰️ **Data Provenance:** Empirical parameters synthesized from NASA Physical Sciences Informatics (PSI) research papers & ISS Combustion Science Guide (NASA/TP-2015-218202).")
 
     # View Toggle: Matrix vs Interactive Holographic Cards
     view_mode = st.radio("Display Mode:", ["📊 Structured Matrix", "🃏 Holographic Investigation Cards"], horizontal=True)
@@ -986,6 +987,11 @@ with tab3:
         """)
 
     st.markdown("### 🎛️ Interactive Spacecraft Flame Physics Chamber")
+    render_html("""
+    <div style="font-size:0.74rem;color:#8da4d0;margin-bottom:12px;font-style:italic;">
+        ⚠️ <b>Interactive Qualitative Physics Model:</b> Illustrative visualization calibrated to empirical NASA flight observations (BASS-II quiescent extinction, BRE/Saffire forced convection, FLEX cool flames).
+    </div>
+    """)
 
     s1, s2, s3 = st.columns(3)
     sim_o2   = s1.slider("Cabin Oxygen Concentration (%)", 14.0, 36.0, 21.0, 0.5)
@@ -1246,6 +1252,11 @@ with tab4:
     r_l, r_r = st.columns([1.1, 1])
     with r_l:
         st.markdown("#### 🏆 Spacecraft Fire Risk Ranking")
+        render_html("""
+        <div style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:0.73rem;color:#ffd180;line-height:1.4;">
+            ⚖️ <b>Scientific Methodology Note:</b> The Composite Hazard Score is an illustrative multi-criteria engineering weighting (40% Spread Rate + 35% Min Ignition O₂ + 25% NASA-STD-6001 Toxicity Index) developed for this comparative dashboard prototype, not an official NASA standard metric.
+        </div>
+        """)
         st.caption("Score = 40% Flame Spread + 35% Ignition O₂ + 25% Toxicity")
 
         fig_bar = go.Figure(go.Bar(

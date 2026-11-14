@@ -785,7 +785,7 @@ with tab1:
     k4.markdown(f'<div class="hud-card" style="border-top-color:#00d2ff;"><div class="hud-val" style="color:#5ce1ff;">{avg_o2}%</div><div class="hud-lbl">Avg Min Ignition O₂¹</div></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.caption("🛰️ **Data Provenance:** Parameters hand-compiled from NASA/PSI technical reports & ISS Combustion Science Guide (NP-2015-10-034-JSC). ¹ Averages exclude droplet/gaseous experiments where spread rate or ignition O₂ is not applicable (N/A).")
+    st.caption("🛰️ **Data Provenance:** Hand-compiled from NASA technical reports & ISS Combustion Science Guide (NP-2015-10-034-JSC). Spread rates, minimum ignition O₂, and toxicity indices are illustrative estimates developed for this dashboard prototype, not measured handbook tables. ¹ Averages exclude droplet/gaseous/historical rows where spread rate or ignition O₂ is N/A.")
 
     # View Toggle: Matrix vs Interactive Holographic Cards
     view_mode = st.radio("Display Mode:", ["📊 Structured Matrix", "🃏 Holographic Investigation Cards"], horizontal=True)
@@ -799,7 +799,7 @@ with tab1:
             "Risk Score": r["Risk_Score"] if r["Risk_Score"] is not None else "—",
             "Spread mm/s": r["Flame_Spread_Display"],
             "Min O₂ %": r["Min_O2_Display"],
-            "Tox": r["Toxicity_Index"],
+            "Tox (illustrative)": r["Toxicity_Index"],
             "Mission / Year": f"{r['Mission']} ({int(r['Year'])})",
         } for r in rows]
         st.markdown(html_table(tbl, max_height=420), unsafe_allow_html=True)
@@ -963,7 +963,7 @@ with tab2:
             m1.metric("O₂ Level", f"{row['Oxygen_Concentration']}%")
             m2.metric("Spread Rate", row["Flame_Spread_Display"] + (" mm/s" if row["Flame_Spread_Display"] != "N/A" else " (not applicable)"))
             m3.metric("Min O₂ Limit", row["Min_O2_Display"] + ("%" if row["Min_O2_Display"] != "N/A" else " (not applicable)"))
-            m4.metric("Toxicity", f"{row['Toxicity_Index']} / 10")
+            m4.metric("Toxicity (illustrative)", f"{row['Toxicity_Index']} / 10")
 
         with col_gauge:
             score = row["Risk_Score"]
@@ -1305,7 +1305,7 @@ with tab4:
         st.markdown("#### 🏆 Spacecraft Experiment Hazard Ranking")
         render_html("""
         <div style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:0.73rem;color:#ffd180;line-height:1.4;">
-            ⚖️ <b>Methodology Note:</b> The Composite Hazard Score is an illustrative multi-criteria weighting (40% Spread Rate + 35% Min Ignition O₂ + 25% Toxicity Index) developed for this educational dashboard — not an official NASA standard. Historical context rows (Apollo 1, Mir, Apollo 13) are excluded from this ranking. For droplet/gaseous experiments where spread rate is N/A, the spread component is set to 0 and the score reflects ignition O₂ and toxicity only.
+            ⚖️ <b>Methodology Note:</b> The Composite Hazard Score is an illustrative multi-criteria weighting (40% Spread Rate + 35% Min Ignition O₂ + 25% Toxicity Index) developed for this educational dashboard — not an official NASA standard. The 0–10 Toxicity Index is an illustrative comparative scale assigned for this prototype and does not represent an official NASA metric or NASA-STD-6001 rating. Historical context rows (Apollo 1, Mir, Apollo 13) are excluded from this ranking. For droplet/gaseous experiments where spread rate is N/A, the spread component is set to 0 and the score reflects ignition O₂ and toxicity only.
         </div>
         """)
         st.caption("Score = 40% Flame Spread + 35% Ignition O₂ + 25% Toxicity | ⚠️ Illustrative — not a NASA metric")
@@ -1383,7 +1383,7 @@ with tab4:
         "Composite Hazard Score": r["Risk_Score"],
         "Spread mm/s": r["Flame_Spread_Display"],
         "Min O₂ %": r["Min_O2_Display"],
-        "Tox Index": r["Toxicity_Index"],
+        "Tox Index (illustrative)": r["Toxicity_Index"],
         "Gravity Environment": r["Gravity_Environment"],
         "Mission": r["Mission"],
     } for i, r in enumerate(ranked)]
@@ -1416,7 +1416,7 @@ with tab5:
             metrics = [
                 ("Flame Spread Rate (mm/s)", "Flame_Spread_Rate", True, "{:.1f}"),
                 ("Min Ignition O₂ (%)", "Min_Ignition_O2", False, "{:.1f}"),
-                ("Toxicity Index (0-10)", "Toxicity_Index", True, "{:.0f}"),
+                ("Toxicity Index (illustrative, 0-10)", "Toxicity_Index", True, "{:.0f}"),
                 ("Composite Hazard Score", "Risk_Score", True, "{:.1f}"),
             ]
             with mc1:

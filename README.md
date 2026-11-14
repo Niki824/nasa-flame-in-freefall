@@ -41,19 +41,18 @@ The file `combustion_data.csv` was **manually compiled and curated from publishe
 ### Source Documents Used:
 1. **NASA ISS Researcher's Guide to Combustion Science (NP-2015-10-034-JSC):** Provided flight overviews, fuel chemistries, hardware constraints, and primary findings for FLEX, FLEX-2, BASS, BASS-II, BRE (Burning Rate Emulator, a gaseous-fuel sub-investigation of the ACME package), and ACME investigations.
 2. **NASA Glenn Research Center Saffire Flight Reports (Urban, Ferkul, Olson et al., 2016–2022):** Provided large-scale cotton-fiberglass and Nomex flame spread rates, airflow sensitivity data, and exploration atmosphere findings for Saffire-I, II, III, and VI.
-3. **NASA Kibo & CIR Technical Summaries:** Provided reduced-gravity flammability parameters for SoFIE (0.16g Moon simulation) and FLARE (0.38g Mars simulation).
-4. **Official NASA Accident Review Board Records:**
+3. **Official NASA Accident Review Board Records:**
    - *Report of Apollo 204 Review Board (NASA SP-138, 1967)*: 100% O₂ flashover dynamics and material flammability tests.
    - *Report of Apollo 13 Review Board (1970)*: Supercritical cryogenic oxygen tank wiring failure and explosion.
    - *NASA History Division: Mir Space Station Fire Analysis (1997)*: Solid-fuel perchlorate oxygen candle combustion and toxic smoke generation.
 
 ### Field-by-Field Origin Breakdown:
 - **`Experiment_Name`, `Fuel_Type`, `Gravity_Environment`, `Oxygen_Concentration`, `Year`, `Mission`, `Historical_Incident`:** Typed directly from the NASA source documents above.
-- **`Flame_Spread_Rate` (mm/s):** Sourced directly from empirical measurements reported in published NASA mission summaries for solid-fuel experiments (Saffire series, BASS, BASS-II, Confined Combustion). **Marked N/A** for droplet-combustion experiments (FLEX, FLEX-2, CFI) and gaseous-fuel experiments (ACME, BRE) where flame spread across a surface is not a measured quantity.
+- **`Flame_Spread_Rate` (mm/s):** Sourced from published NASA mission summaries for solid-fuel experiments (Saffire series, BASS, BASS-II, Confined Combustion) as illustrative estimates for comparative display. **Marked N/A** for droplet-combustion experiments (FLEX, FLEX-2, CFI) and gaseous-fuel experiments (ACME, BRE) where flame spread across a surface is not a measured quantity.
 - **`Min_Ignition_O2` (%):** Illustrative extinction-limit thresholds consistent with published experiment papers. **Marked N/A** for Apollo 1 and Apollo 13 (historical accidents, not systematic flammability tests).
 - **`Key_Findings`:** Hand-curated technical summaries of primary findings published by the NASA Principal Investigator teams.
 - **`BRE` experiment:** Correctly identified as the **Burning Rate Emulator**, a sub-investigation within the ACME package that uses a gaseous-fuel porous-sphere burner in microgravity. BRE is NOT a solid-fuel test; earlier versions of this CSV incorrectly labelled it "Burning and Suppression of Solids" — this has been corrected.
-- **`Toxicity_Index` (1–10, Illustrative Index):** **Raw NASA PSI records do not measure or report a numerical toxicity index.** To bridge combustion physics with life-support safety, we assigned an illustrative 1–10 qualitative severity score based on the material off-gas hazard classifications defined in **NASA-STD-6001B Test 7** (*"Toxic Offgassing Determination and Carbon Monoxide / Hydrogen Cyanide Analysis"*). For example, liquid fuels generating sub-visible formaldehyde receive 7/10, thick PMMA acrylic receives 5–6/10, and burning perchlorate candles producing acrid smoke receive 9/10. This index is **not** an official NASA metric.
+- **`Toxicity_Index` (1–10, Illustrative Index):** **Raw NASA PSI records do not measure or report a numerical toxicity index.** This column is an **illustrative estimate (1–10 scale)** assigned solely for this demonstration to reflect qualitative smoke and combustion byproduct severity across fuel classes. It is **NOT** an official NASA metric and does **NOT** derive from NASA-STD-6001.
 - **Partial-gravity entries (Lunar/Martian):** The NASA PSI repository **does not currently hold tabulated partial-gravity combustion data**. The simulator's Lunar (0.16g) and Martian (0.38g) modes are **qualitative illustrations** based on the general physical principle that partial gravity produces weak buoyancy effects. SoFIE (designed to study partial gravity) is an active ISS investigation — full results are not yet publicly tabulated. No rows in `combustion_data.csv` claim partial-gravity empirical measurements.
 - **Historical context rows (Apollo 1, Mir, Apollo 13):** Included for narrative context only. These are not scored in the hazard ranking, and no flame spread rate or Min Ignition O₂ applies to them.
 - **`AI_Summary` & `Safety_Recommendations`:** AI-drafted plain-language translations produced by Google Gemini 1.5, conditioned strictly on the factual text of the NASA documents, then reviewed before being stored in the CSV. **No AI model is called at runtime** — the app displays this pre-stored text.
@@ -127,6 +126,16 @@ streamlit run app.py
 ```
 
 The application opens locally at `http://localhost:8501`.
+
+---
+
+## 🎨 Asset Provenance & Ethics Disclosure
+
+All visual mascot and spacecraft imagery stored in the `assets/` directory (`cute_3d_robot.jpg`, `cute_astronaut_3d.jpg`, `cute_ufo_3d.jpg`, `cute_saturn_3d.jpg`, `3d_iss.jpg`, `3d_rocket.jpg`):
+- Were **synthesized using Google Imagen 3 / Gemini** as conceptual 3D character illustrations.
+- Depict **fictional, stylized sci-fi avatars** (NOVA AI robot, Commander Leo stylized space explorer, Navigator Zog alien observer) and 3D spacecraft modules.
+- **Do NOT depict any real persons**, living or deceased.
+- **Do NOT depict anyone under 18 years of age.**
 
 ---
 

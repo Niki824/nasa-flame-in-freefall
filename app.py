@@ -872,7 +872,7 @@ with tab3:
 with tab4:
     flight_rows = [r for r in rows if not r["Is_Historical"]]
     st.markdown("### 📊 Evidence-Based Experiment Comparison & Synthesis")
-    st.caption("Systematic multi-parameter comparison across NASA microgravity combustion investigations and benchmark incidents.")
+    st.caption("Systematic multi-parameter comparison across NASA microgravity combustion investigations.")
 
     c_left, c_right = st.columns([1.2, 1])
 

@@ -320,10 +320,24 @@ def load_data():
             raw_o2 = row.get("Test_Atmosphere_O2", "").strip()
             try:
                 if " to " in raw_o2:
-                    row["O2_Numeric"] = float(raw_o2.split(" to ")[-1])
+                    parts = raw_o2.split(" to ")
+                    row["O2_Min"] = float(parts[0])
+                    row["O2_Max"] = float(parts[1])
+                    row["O2_Mid"] = (row["O2_Min"] + row["O2_Max"]) / 2.0
+                    row["O2_Is_Range"] = True
+                    row["O2_Numeric"] = row["O2_Mid"]
                 else:
-                    row["O2_Numeric"] = float(raw_o2)
+                    val = float(raw_o2)
+                    row["O2_Min"] = val
+                    row["O2_Max"] = val
+                    row["O2_Mid"] = val
+                    row["O2_Is_Range"] = False
+                    row["O2_Numeric"] = val
             except:
+                row["O2_Min"] = None
+                row["O2_Max"] = None
+                row["O2_Mid"] = None
+                row["O2_Is_Range"] = False
                 row["O2_Numeric"] = None
 
             # Fuel phase categorization
@@ -372,7 +386,7 @@ with st.sidebar:
             <div style="text-align:center;padding:4px 0 2px 0;">
                 <img src="{robot_b64}" style="width:150px;height:auto;border-radius:20px;border:2px solid #00e5ff;box-shadow:0 0 24px rgba(0,229,255,0.6);background:#050a18;">
                 <div style="margin-top:8px;display:flex;justify-content:center;align-items:center;gap:6px;">
-                    <span class="cute-badge">✨ NOVA RESPONSE</span>
+                    <span class="cute-badge">✨ NOVA RESEARCH NOTE</span>
                 </div>
                 <div class="cute-speech-bubble">
                     Beep boop! 🤖 In microgravity, fire burns as calm, silent blue spheres without rising hot air! ✨
@@ -519,7 +533,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ── Main Tab Navigation ───────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🛰️ Archival Telemetry Explorer",
+    "🛰️ NASA Experiment Explorer",
     "🤖 AI Research Briefing & Synthesis",
     "🎛️ Morphing Flame Physics Chamber",
     "📊 Evidence-Based Experiment Comparison",
@@ -623,8 +637,8 @@ with tab2:
         "**synthesized during project development using Google Gemini 1.5 Pro**, conditioned directly on the "
         "underlying NASA technical reports (NP-2015-10-034-JSC, Saffire reports, and NASA accident review boards). "
         "The model's outputs were verified and stored as static archival text in `combustion_data.csv`. "
-        "**No AI model is queried at runtime**; this dashboard operates deterministically in Python with zero latency or hallucination risk. "
-        "NOVA is an illustrated UI mascot, not a live conversational agent."
+        "**No generative AI is invoked at runtime.** AI-assisted summaries were prepared during development and reviewed against the cited research sources. "
+        "This dashboard operates deterministically in Python. NOVA is an illustrated UI mascot, not a live conversational agent."
     )
 
     if not rows:
@@ -657,10 +671,10 @@ with tab2:
             render_html(f"""
             <div class="safety-panel">
                 <div style="font-family:'JetBrains Mono',monospace;color:#ff8c42;font-size:0.82rem;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-                    <span>🛰️</span> OPERATIONAL SPACECRAFT RELEVANCE
+                    <span>🛰️</span> POTENTIAL SPACECRAFT RELEVANCE
                 </div>
                 <div style="font-size:0.96rem;line-height:1.6;color:#ffe8e0;">
-                    {html.escape(row['Operational_Relevance'])}
+                    {html.escape(row.get('Potential_Spacecraft_Relevance', row.get('Operational_Relevance', '')))}
                 </div>
             </div>
             """)
@@ -828,7 +842,7 @@ with tab3:
 
     col_desc, col_advisory = st.columns([1.8, 1.2])
     with col_desc:
-        st.markdown(f"#### 🔬 Physical Regime Interpretation")
+        st.markdown(f"#### 🔬 Conceptual Interpretation")
         st.info(f"**{regime_title}**\n\n{regime_desc}")
     with col_advisory:
         st.markdown("#### 📖 NASA Flight Observations")
@@ -856,11 +870,28 @@ with tab4:
 
         phases = ["Solid", "Liquid", "Gaseous", "Historical"]
         for p in phases:
-            sub = [r for r in rows if r["Phase"] == p and r.get("Year_Num") is not None and r.get("O2_Numeric") is not None]
+            sub = [r for r in rows if r["Phase"] == p and r.get("Year_Num") is not None and r.get("O2_Mid") is not None]
             if not sub: continue
+            
+            y_mid = [r["O2_Mid"] for r in sub]
+            y_err_plus = [r["O2_Max"] - r["O2_Mid"] for r in sub]
+            y_err_minus = [r["O2_Mid"] - r["O2_Min"] for r in sub]
+            has_error = any(e > 0.01 for e in y_err_plus)
+            
+            error_dict = dict(
+                type="data",
+                symmetric=False,
+                array=y_err_plus,
+                arrayminus=y_err_minus,
+                color=PHASE_COLOR.get(p, "#00d2ff"),
+                thickness=2,
+                width=6
+            ) if has_error else None
+
             fig_scatter.add_trace(go.Scatter(
                 x=[r["Year_Num"] for r in sub],
-                y=[r["O2_Numeric"] for r in sub],
+                y=y_mid,
+                error_y=error_dict,
                 mode="markers+text",
                 name=f"{p} Investigation",
                 marker=dict(
@@ -871,20 +902,21 @@ with tab4:
                 ),
                 text=[r["Experiment_Name"].split()[0] for r in sub],
                 textposition="top center",
-                hovertemplate="<b>%{customdata[0]}</b><br>Year: %{x}<br>O₂ Tested: %{y}%<br>Carrier: %{customdata[1]}<extra></extra>",
-                customdata=[[r["Experiment_Name"], r["Mission"]] for r in sub],
+                hovertemplate="<b>%{customdata[0]}</b><br>Year: %{x}<br>Tested O₂: %{customdata[2]}%<br>Carrier: %{customdata[1]}<extra></extra>",
+                customdata=[[r["Experiment_Name"], r["Mission"], r["Test_Atmosphere_O2"]] for r in sub],
             ))
 
         fig_scatter.update_layout(
-            title=dict(text="NASA Flight Experiments: Atmosphere O₂ (%) vs. Calendar Year", font=dict(family="Orbitron", size=13)),
+            title=dict(text="NASA Flight Experiments: Atmosphere O₂ Range (%) vs. Calendar Year", font=dict(family="Orbitron", size=13)),
             xaxis_title="Mission Year",
-            yaxis_title="Tested Oxygen Concentration (%)",
+            yaxis_title="Tested Oxygen Concentration Range (%)",
             height=420,
             margin=dict(l=10, r=20, t=40, b=30),
             legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
             **PLOTLY_LAYOUT
         )
         st.plotly_chart(fig_scatter, use_container_width=True)
+        st.caption("Vertical range bars represent the full parametric oxygen concentration range tested (e.g. BASS: 17.0%–21.0% O₂). Discrete markers represent single-atmosphere test conditions.")
 
     with c_right:
         st.markdown("#### 🧬 Fuel Physical Phase Distribution")

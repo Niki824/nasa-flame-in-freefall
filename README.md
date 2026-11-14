@@ -86,11 +86,11 @@ In compliance with NASA Space Apps Challenge submission standards:
 - **What the Model Received (Input):** Verbatim technical findings, flight summaries, and mission logs extracted directly from the NASA publications listed above.
 - **What the Model Returned (Output):**
   1. Plain-English research summaries (`AI_Research_Summary` in `combustion_data.csv`).
-  2. Operational spacecraft relevance interpretations (`Operational_Relevance` in `combustion_data.csv`).
+  2. Potential spacecraft relevance interpretations (`Potential_Spacecraft_Relevance` in `combustion_data.csv`).
   3. Character concept briefs for the cute 3D zero-gravity companion mascots (NOVA, Commander Leo, Navigator Zog).
 - **Deterministic Runtime Architecture:**
   - All web interface code (`app.py`), Streamlit components, SVG flame rendering, data filtering, and Plotly visualizations are **fixed text and ordinary Python code**.
-  - **No generative AI is invoked at runtime** when users interact with the dashboard, guaranteeing 100% deterministic, reproducible behavior with zero latency and zero hallucination risk.
+  - **No generative AI is invoked at runtime.** AI-assisted summaries were prepared during development and reviewed against the cited research sources. This dashboard operates deterministically in Python with zero latency.
   - NOVA is a static illustrated mascot, not a live conversational chatbot.
 
 ---

@@ -429,8 +429,10 @@ with st.sidebar:
         sel_fuel  = st.multiselect("🧪 Fuel Chemistry & Phase", all_fuels, default=all_fuels)
         sel_grav  = st.multiselect("🌌 Gravity Regime", all_gravs, default=all_gravs)
         sel_types = st.multiselect("📂 Record Category", ["Flight Investigation", "Historical Benchmark Incident"], default=["Flight Investigation", "Historical Benchmark Incident"])
+        sel_o2 = st.selectbox("🫧 Oxygen Concentration", ["All oxygen levels", "Below 18%", "18%–21%", "Above 21%"])
     else:
         sel_fuel = sel_grav = sel_types = []
+        sel_o2 = "All oxygen levels"
 
     st.markdown("---")
 
@@ -476,6 +478,15 @@ def apply_filters(rows):
         if cat not in sel_types: continue
         if r["Fuel_Type"] not in sel_fuel: continue
         if r["Gravity_Environment"] not in sel_grav: continue
+        o2_mid = r.get("O2_Mid")
+        if sel_o2 == "Below 18%" and (o2_mid is None or o2_mid >= 18):
+            continue
+        elif sel_o2 == "18%–21%" and (
+            o2_mid is None or not 18 <= o2_mid <= 21
+        ):
+            continue
+        elif sel_o2 == "Above 21%" and (o2_mid is None or o2_mid <= 21):
+            continue
         if kw:
             haystack = (r["Experiment_Name"] + r["Key_Findings"] + r["Fuel_Type"] + r["Mission"] + r["Sensors_And_Diagnostics"]).lower()
             if kw not in haystack: continue

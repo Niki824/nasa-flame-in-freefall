@@ -993,6 +993,8 @@ with tab5:
                 st.markdown(f"**Key Findings:** {rb['Key_Findings']}")
                 if rb.get("NASA_Source_URL"):
                     st.markdown(f"[🔗 Official NASA Investigation Record]({rb['NASA_Source_URL']})")
+    else:
+        st.warning("Please maintain at least two investigations in your filter selection for side-by-side comparison.")
 
     st.markdown("---")
     st.markdown("### 🏛️ Historical Space Fires & Lessons Learned")

@@ -870,6 +870,7 @@ with tab3:
 # TAB 4 — EVIDENCE-BASED EXPERIMENT COMPARISON
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab4:
+    flight_rows = [r for r in rows if not r["Is_Historical"]]
     st.markdown("### 📊 Evidence-Based Experiment Comparison & Synthesis")
     st.caption("Systematic multi-parameter comparison across NASA microgravity combustion investigations and benchmark incidents.")
 
@@ -881,7 +882,7 @@ with tab4:
 
         phases = ["Solid", "Liquid", "Gaseous", "Historical"]
         for p in phases:
-            sub = [r for r in rows if r["Phase"] == p and r.get("Year_Num") is not None and r.get("O2_Mid") is not None]
+            sub = [r for r in flight_rows if r["Phase"] == p and r.get("Year_Num") is not None and r.get("O2_Mid") is not None]
             if not sub: continue
             
             y_mid = [r["O2_Mid"] for r in sub]
@@ -932,7 +933,7 @@ with tab4:
     with c_right:
         st.markdown("#### 🧬 Fuel Physical Phase Distribution")
         phase_counts = {}
-        for r in rows:
+        for r in flight_rows:
             phase_counts[r["Phase"]] = phase_counts.get(r["Phase"], 0) + 1
 
         fig_donut = go.Figure(go.Pie(
@@ -955,7 +956,7 @@ with tab4:
     st.markdown("---")
     st.markdown("#### 🔬 Detailed Experimental Parameters & Instrumentation Comparison")
     comp_tbl = []
-    for r in rows:
+    for r in flight_rows:
         url = r.get("NASA_Source_URL", "")
         link = f'<a href="{html.escape(url)}" target="_blank" style="color:#00d2ff;text-decoration:none;">Record ↗</a>' if url else "—"
         comp_tbl.append({
@@ -1000,7 +1001,7 @@ with tab5:
     st.markdown("### ⚖️ Side-by-Side Investigation Comparison")
     st.caption("Select two NASA investigations to inspect comparative objectives, environments, and findings.")
 
-    exp_list = [r["Experiment_Name"] for r in rows]
+    exp_list = [r["Experiment_Name"] for r in flight_rows]
     if len(exp_list) >= 2:
         c1, c2 = st.columns(2)
         exp_a = c1.selectbox("🔴 Investigation A", exp_list, index=0)

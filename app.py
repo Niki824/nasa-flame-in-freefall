@@ -529,6 +529,14 @@ def load_data():
 
 all_rows = load_data()
 
+# ── Pre-load Asset Base64 Data URIs (Globally Cached) ─────────────────────────
+robot_b64  = get_base64_image("cute_3d_robot.jpg")
+astro_b64  = get_base64_image("cute_astronaut_3d.jpg")
+ufo_b64    = get_base64_image("cute_ufo_3d.jpg")
+saturn_b64 = get_base64_image("cute_saturn_3d.jpg")
+iss_b64    = get_base64_image("3d_iss.jpg")
+rocket_b64 = get_base64_image("3d_rocket.jpg")
+
 # ── Sidebar Command Console ──────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""

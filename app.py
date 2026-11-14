@@ -389,7 +389,7 @@ with st.sidebar:
                     <span class="cute-badge">✨ NOVA RESEARCH NOTE</span>
                 </div>
                 <div class="cute-speech-bubble">
-                    Beep boop! 🤖 In microgravity, fire burns as calm, silent blue spheres without rising hot air! ✨
+                    Beep boop! 🤖 In many still-air microgravity tests, flames can become more rounded because buoyancy-driven flow is greatly reduced. Their shape still depends on fuel, airflow, and oxygen! ✨
                 </div>
             </div>
             """)

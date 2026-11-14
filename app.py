@@ -517,13 +517,36 @@ def load_data():
     rows = []
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            for col in ["Oxygen_Concentration", "Flame_Spread_Rate", "Min_Ignition_O2",
-                        "Toxicity_Index", "Year"]:
+            # Year and O2 concentration are always numeric
+            for col in ["Oxygen_Concentration", "Year"]:
                 try:    row[col] = float(row[col])
                 except: row[col] = 0.0
-            spread = min(row["Flame_Spread_Rate"], 20)
-            o2     = min(max(row["Min_Ignition_O2"], 10), 30)
-            row["Risk_Score"] = round(spread/20*40 + (1-o2/30)*35 + row["Toxicity_Index"]/10*25, 1)
+            # Toxicity is always numeric
+            try:    row["Toxicity_Index"] = float(row["Toxicity_Index"])
+            except: row["Toxicity_Index"] = 0.0
+            # Spread rate and Min Ignition O2 may be "N/A" for droplet/gaseous experiments
+            for col in ["Flame_Spread_Rate", "Min_Ignition_O2"]:
+                val = str(row.get(col, "")).strip()
+                row[col] = float(val) if val not in ("N/A", "", "n/a") else None
+            # Historical context rows (Apollo 1, Apollo 13, Mir) are excluded from ranking
+            row["Is_Historical"] = row.get("Historical_Incident", "No").strip().lower() == "yes"
+            # Compute risk score only for rows that have both spread and O2 data
+            spread_val = row["Flame_Spread_Rate"]
+            o2_val     = row["Min_Ignition_O2"]
+            if spread_val is not None and o2_val is not None and not row["Is_Historical"]:
+                spread = min(spread_val, 20)
+                o2     = min(max(o2_val, 10), 30)
+                row["Risk_Score"] = round(spread/20*40 + (1-o2/30)*35 + row["Toxicity_Index"]/10*25, 1)
+            elif not row["Is_Historical"] and o2_val is not None:
+                # For droplet/gaseous experiments: score based on ignition O2 and toxicity only
+                # Spread component = 0 (not applicable); label these as illustrative
+                o2 = min(max(o2_val, 10), 30)
+                row["Risk_Score"] = round((1-o2/30)*35 + row["Toxicity_Index"]/10*25, 1)
+            else:
+                row["Risk_Score"] = None  # Historical context rows get no score
+            # Display-safe versions
+            row["Flame_Spread_Display"] = f"{spread_val:.1f}" if spread_val is not None else "N/A"
+            row["Min_O2_Display"] = f"{o2_val:.1f}" if o2_val is not None else "N/A"
             rows.append(row)
     return rows
 
@@ -665,15 +688,15 @@ def apply_filters(rows):
 
 rows = apply_filters(all_rows)
 
-# ── Live Telemetry Status Ticker ─────────────────────────────────────────────
+# ── Status Ticker (Static Archive Label) ─────────────────────────────────────
 st.markdown("""
 <div class="telemetry-ticker">
     <div class="ticker-left">
-        <span class="ticker-badge"><span class="pulse-dot"></span> LIVE TELEMETRY</span>
-        <span>NASA PSI COMBUSTION ARCHIVE // EXPEDITION 71 ECLSS SYNCED</span>
+        <span class="ticker-badge"><span class="pulse-dot"></span> ARCHIVE</span>
+        <span>NASA PSI COMBUSTION ARCHIVE // CURATED FROM PUBLISHED TECHNICAL REPORTS</span>
     </div>
     <div style="font-size:0.75rem;color:#00d2ff;">
-        CABIN: 21.0% O₂ | 101.3 kPa | 0.00g µG | PROTOCOL: NASA-STD-6001
+        STANDARD ISS ATMOSPHERE: 21.0% O₂ | 101.3 kPa | 0.00g µG | NASA-STD-6001
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -690,7 +713,7 @@ with col_hero_text:
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
             <span class="ticker-badge"><span class="pulse-dot"></span> ACTIVE</span>
             <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#00d2ff;background:rgba(0,210,255,0.08);border:1px solid rgba(0,210,255,0.25);padding:3px 10px;border-radius:6px;">
-                🛰️ 25 EXPERIMENTS
+                🛰️ 15 EXPERIMENTS
             </span>
             <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#ffd000;background:rgba(255,208,0,0.08);border:1px solid rgba(255,208,0,0.25);padding:3px 10px;border-radius:6px;">
                 🌙 ARTEMIS &amp; MARS READY
@@ -718,7 +741,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ── Main Tab Navigation ───────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🛰️ Telemetry Explorer",
-    "🤖 AI Safety Interpreter",
+    "📋 Safety Interpreter",
     "🎛️ Morphing Flame Simulator",
     "📊 3D Hazard Landscape & Ranking",
     "⚖️ Head-to-Head & Historical Lessons",
@@ -748,18 +771,21 @@ with tab1:
         """)
 
     high_n  = sum(1 for r in rows if r["Fire_Risk_Level"] == "High")
-    spreads = [min(r["Flame_Spread_Rate"], 20) for r in rows]
-    avg_sp  = safe_mean(spreads)
-    avg_o2  = safe_mean([r["Min_Ignition_O2"] for r in rows])
+    # Only average spread/O2 for rows that have numeric values (not N/A)
+    spreads_num = [r["Flame_Spread_Rate"] for r in rows if r["Flame_Spread_Rate"] is not None]
+    o2_num      = [r["Min_Ignition_O2"]   for r in rows if r["Min_Ignition_O2"]   is not None]
+    avg_sp  = safe_mean(spreads_num) if spreads_num else "N/A"
+    avg_o2  = safe_mean(o2_num)      if o2_num      else "N/A"
 
     k1, k2, k3, k4 = st.columns(4)
     k1.markdown(f'<div class="hud-card"><div class="hud-val">{len(rows)}</div><div class="hud-lbl">Total Experiments</div></div>', unsafe_allow_html=True)
     k2.markdown(f'<div class="hud-card" style="border-top-color:#ff4d4d;"><div class="hud-val" style="color:#ff6b6b;">{high_n}</div><div class="hud-lbl">High Fire Risk</div></div>', unsafe_allow_html=True)
-    k3.markdown(f'<div class="hud-card" style="border-top-color:#ffa500;"><div class="hud-val" style="color:#ffc266;">{avg_sp}</div><div class="hud-lbl">Avg Spread (mm/s)</div></div>', unsafe_allow_html=True)
-    k4.markdown(f'<div class="hud-card" style="border-top-color:#00d2ff;"><div class="hud-val" style="color:#5ce1ff;">{avg_o2}%</div><div class="hud-lbl">Min Ignition O₂</div></div>', unsafe_allow_html=True)
+    avg_sp_lbl = f"{avg_sp}" if avg_sp == "N/A" else avg_sp
+    k3.markdown(f'<div class="hud-card" style="border-top-color:#ffa500;"><div class="hud-val" style="color:#ffc266;">{avg_sp_lbl}</div><div class="hud-lbl">Avg Spread mm/s¹</div></div>', unsafe_allow_html=True)
+    k4.markdown(f'<div class="hud-card" style="border-top-color:#00d2ff;"><div class="hud-val" style="color:#5ce1ff;">{avg_o2}%</div><div class="hud-lbl">Avg Min Ignition O₂¹</div></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.caption("🛰️ **Data Provenance:** Empirical parameters synthesized from NASA Physical Sciences Informatics (PSI) research papers & ISS Combustion Science Guide (NASA/TP-2015-218202).")
+    st.caption("🛰️ **Data Provenance:** Parameters hand-compiled from NASA/PSI technical reports & ISS Combustion Science Guide (NP-2015-10-034-JSC). ¹ Averages exclude droplet/gaseous experiments where spread rate or ignition O₂ is not applicable (N/A).")
 
     # View Toggle: Matrix vs Interactive Holographic Cards
     view_mode = st.radio("Display Mode:", ["📊 Structured Matrix", "🃏 Holographic Investigation Cards"], horizontal=True)
@@ -770,9 +796,9 @@ with tab1:
             "Fuel": r["Fuel_Type"],
             "Regime": r["Gravity_Environment"],
             "Severity": r["Fire_Risk_Level"],
-            "Risk Score": r["Risk_Score"],
-            "Spread mm/s": r["Flame_Spread_Rate"],
-            "Min O₂ %": r["Min_Ignition_O2"],
+            "Risk Score": r["Risk_Score"] if r["Risk_Score"] is not None else "—",
+            "Spread mm/s": r["Flame_Spread_Display"],
+            "Min O₂ %": r["Min_O2_Display"],
             "Tox": r["Toxicity_Index"],
             "Mission / Year": f"{r['Mission']} ({int(r['Year'])})",
         } for r in rows]
@@ -796,9 +822,9 @@ with tab1:
                     {r['AI_Summary'][:140]}…
                 </div>
                 <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#00d2ff;border-top:1px solid #1a2744;padding-top:6px;">
-                    <span>SPREAD: {r['Flame_Spread_Rate']} mm/s</span>
-                    <span>MIN O₂: {r['Min_Ignition_O2']}%</span>
-                    <span>SCORE: {r['Risk_Score']}</span>
+                    <span>SPREAD: {r['Flame_Spread_Display']} mm/s</span>
+                    <span>MIN O₂: {r['Min_O2_Display']}%</span>
+                    <span>SCORE: {r['Risk_Score'] if r['Risk_Score'] is not None else '—'}</span>
                 </div>
             </div>
             """).strip())
@@ -863,9 +889,18 @@ with tab1:
         st.plotly_chart(fig_sun, use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — AI SAFETY INTERPRETER
+# TAB 2 — SAFETY INTERPRETER
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab2:
+    # Disclosure banner — important for judges
+    st.info(
+        "📋 **How this tab works:** The summaries and safety notes below are "
+        "**pre-written text** that was drafted with the help of Google Gemini 1.5 "
+        "based on the NASA source documents, then reviewed and stored in "
+        "`combustion_data.csv`. **No AI model is called at runtime** — the app "
+        "simply displays the stored text. NOVA is an illustrated mascot image, "
+        "not a live model."
+    )
     if not rows:
         st.warning("No investigations match the current filter envelope.")
     else:
@@ -926,42 +961,52 @@ with tab2:
             # Quick Metric Chips
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("O₂ Level", f"{row['Oxygen_Concentration']}%")
-            m2.metric("Spread Rate", f"{row['Flame_Spread_Rate']} mm/s")
-            m3.metric("Min O₂ Limit", f"{row['Min_Ignition_O2']}%")
+            m2.metric("Spread Rate", row["Flame_Spread_Display"] + (" mm/s" if row["Flame_Spread_Display"] != "N/A" else " (not applicable)"))
+            m3.metric("Min O₂ Limit", row["Min_O2_Display"] + ("%" if row["Min_O2_Display"] != "N/A" else " (not applicable)"))
             m4.metric("Toxicity", f"{row['Toxicity_Index']} / 10")
 
         with col_gauge:
             score = row["Risk_Score"]
-            fig_g = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=score,
-                number={"font": {"family": "Orbitron", "color": "#ffffff", "size": 38}},
-                title={"text": "FIRE RISK SCORE", "font": {"family": "JetBrains Mono", "size": 13, "color": "#8da4d0"}},
-                gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#8da4d0", "tickwidth": 1},
-                    "bar": {"color": RISK_COLOR.get(row["Fire_Risk_Level"], "#ff6b35"), "thickness": 0.28},
-                    "bgcolor": "rgba(16, 24, 46, 0.7)",
-                    "borderwidth": 1,
-                    "bordercolor": "#233458",
-                    "steps": [
-                        {"range": [0, 35], "color": "rgba(0, 245, 160, 0.12)"},
-                        {"range": [35, 65], "color": "rgba(255, 165, 0, 0.12)"},
-                        {"range": [65, 100], "color": "rgba(255, 77, 77, 0.15)"},
-                    ],
-                }
-            ))
-            fig_g.update_layout(**PLOTLY_LAYOUT, height=300, margin=dict(t=40, b=10, l=20, r=20))
-            st.plotly_chart(fig_g, use_container_width=True)
+            if score is not None:
+                fig_g = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=score,
+                    number={"font": {"family": "Orbitron", "color": "#ffffff", "size": 38}},
+                    title={"text": "COMPOSITE HAZARD SCORE", "font": {"family": "JetBrains Mono", "size": 13, "color": "#8da4d0"}},
+                    gauge={
+                        "axis": {"range": [0, 100], "tickcolor": "#8da4d0", "tickwidth": 1},
+                        "bar": {"color": RISK_COLOR.get(row["Fire_Risk_Level"], "#ff6b35"), "thickness": 0.28},
+                        "bgcolor": "rgba(16, 24, 46, 0.7)",
+                        "borderwidth": 1,
+                        "bordercolor": "#233458",
+                        "steps": [
+                            {"range": [0, 35], "color": "rgba(0, 245, 160, 0.12)"},
+                            {"range": [35, 65], "color": "rgba(255, 165, 0, 0.12)"},
+                            {"range": [65, 100], "color": "rgba(255, 77, 77, 0.15)"},
+                        ],
+                    }
+                ))
+                fig_g.update_layout(**PLOTLY_LAYOUT, height=300, margin=dict(t=40, b=10, l=20, r=20))
+                st.plotly_chart(fig_g, use_container_width=True)
+                st.caption("⚖️ Illustrative multi-criteria score (40% spread + 35% ignition O₂ + 25% toxicity). Not an official NASA metric. Historical context rows are excluded from scoring.")
+            else:
+                st.info("ℹ️ This row is a historical context entry. It is not scored in the ranking — see the Historical Lessons tab for the full narrative.")
 
-            # Astronaut Quick Checklist Generator
-            if st.button("📋 Generate Emergency Flight Checklist", use_container_width=True):
-                st.success(f"""
-                **EMERGENCY CHECKLIST // {row['Experiment_Name'].split()[0].upper()} PROTOCOL**
-                1. 🛑 Throttle cabin airflow fans (< 2 cm/s).
-                2. 🤿 Don emergency breathing masks immediately.
-                3. 🔍 Scan for invisible cool flames using UV/IR sensors.
-                4. 🧯 Trigger automated CO₂/N₂ inert gas rack purge.
-                """)
+            # Design-Concept Checklist (not an operational protocol)
+            if st.button("📋 Show Design-Concept Response Checklist", use_container_width=True):
+                st.warning(
+                    f"**DESIGN-CONCEPT CHECKLIST // {row['Experiment_Name'].split()[0].upper()} SCENARIO**\n\n"
+                    "⚠️ *Illustrative design ideas for a spacecraft fire response system — "
+                    "not a certified NASA operational protocol.*\n\n"
+                    "1. 🤿 Crew dons emergency breathing masks.\n"
+                    "2. 🔍 Multi-sensor scan: UV/IR fire detection + CO/formaldehyde gas analyzer "
+                    "(NASA research indicates cool flames may be invisible to smoke detectors).\n"
+                    "3. 🧯 Deploy suppression agent per vehicle emergency procedures.\n"
+                    "4. 🔄 Ventilation management per vehicle emergency procedures — "
+                    "note: NASA research shows airflow affects fire growth, "
+                    "but optimal strategy depends on the specific fire scenario.\n"
+                    "5. ✅ Verify gas-analyzer reads safe before removing masks."
+                )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — MORPHING FLAME SIMULATOR (SHOWSTOPPER VISUAL FEATURE)
@@ -1192,26 +1237,26 @@ body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
             """)
 
     with r_adv:
-        st.markdown("#### 🧠 Real-Time Safety Advisories")
+        st.markdown("#### 🧠 Simulator Advisory Notes")
         advisories = []
         if sim_o2 > 24.0:
             advisories.append(("🚨", "High Oxygen Hazard (>24%)",
-                "Per Saffire-VI: Ignition energy drops >60%. Materials release dangerous toxic CO and cyanide gases."))
+                "Saffire-VI found that elevated O₂ in exploration atmospheres significantly increases ignition propensity and toxic gas output. This simulator illustrates that trend qualitatively."))
         if sim_o2 < 17.0:
-            advisories.append(("ℹ️", "Hypoxic Low-Oxygen (<17%)",
-                "Flames self-extinguish easily, but crew cognitive alertness drops."))
+            advisories.append(("ℹ️", "Low-Oxygen Regime (<17%)",
+                "Research shows flames approach extinction limits at low O₂ — but NASA's guide notes that assuming self-extinction is a common misconception. Always verify with sensors."))
         if 4 <= sim_flow <= 18 and "0.00g" in sim_grav:
-            advisories.append(("⚠️", "Forced Airflow Hazard (5–18 cm/s)",
-                "Per Saffire-I & BRE: Cabin airflow feeds fresh oxygen—flame spread rate doubles!"))
+            advisories.append(("⚠️", "Forced Airflow in Microgravity (4–18 cm/s)",
+                "Saffire-I and BASS research found that cabin ventilation airflow feeds the flame front in microgravity. This simulator illustrates the qualitative trend."))
         if sim_flow < 2 and "0.00g" in sim_grav:
-            advisories.append(("✅", "Still Air Zone (<2 cm/s)",
-                "Per BASS-II: Without airflow, trapped smoke chokes the flame into self-extinguishment."))
+            advisories.append(("ℹ️", "Near-Quiescent Air (<2 cm/s)",
+                "BASS and BASS-II research showed that very low airflow reduces flame spread for some solid fuels — but self-extinction is not guaranteed across all scenarios."))
         if "Lunar" in sim_grav:
-            advisories.append(("🌑", "Lunar Gravity (0.16g)",
-                "Per SoFIE: Weak buoyancy spreads flame along structural plastics faster than in 0-g."))
+            advisories.append(("🌑", "Lunar Gravity (0.16g) — Qualitative Illustration",
+                "No PSI partial-gravity combustion dataset currently exists. This simulator illustrates a hypothetical scenario based on the general principle that weak buoyancy at 0.16g may affect flame structure differently from 0g. SoFIE is designed to study this — results are not yet publicly tabulated."))
         if "Martian" in sim_grav:
-            advisories.append(("🔴", "Martian Gravity (0.38g)",
-                "Per FLARE: Melting polymer droplets drip down wire bundles and spread fire across walls."))
+            advisories.append(("🔴", "Martian Gravity (0.38g) — Qualitative Illustration",
+                "No PSI partial-gravity combustion dataset currently exists for 0.38g. This simulator illustrates a hypothetical scenario. Future Martian habitat fire safety will require dedicated research."))
         if not advisories:
             advisories.append(("✅", "Nominal Atmosphere",
                 "Standard ISS fire safety envelope. Keep automated smoke and gas sensors active."))
@@ -1220,9 +1265,11 @@ body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
             lvl = "error" if icon == "🚨" else ("warning" if icon in ("⚠️", "🔴") else "info")
             getattr(st, lvl)(f"**{icon} {title}** — {body}")
 
-        if rows:
-            nearest = min(rows, key=lambda r: abs(r["Risk_Score"] - sim_score))
-            st.caption(f"🔍 **Closest NASA Study:** `{nearest['Experiment_Name']}` (Score: {nearest['Risk_Score']})")
+        # Only compare against scorable rows
+        scorable = [r for r in rows if r["Risk_Score"] is not None]
+        if scorable:
+            nearest = min(scorable, key=lambda r: abs(r["Risk_Score"] - sim_score))
+            st.caption(f"🔍 **Nearest archived study by score:** `{nearest['Experiment_Name']}` (Score: {nearest['Risk_Score']})")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 4 — 3D HAZARD LANDSCAPE & RANKING
@@ -1247,17 +1294,21 @@ with tab4:
         </div>
         """)
 
-    ranked = sorted(rows, key=lambda r: r["Risk_Score"], reverse=True)
+    # Exclude historical context rows from ranking and 3D chart
+    ranked = sorted(
+        [r for r in rows if r["Risk_Score"] is not None],
+        key=lambda r: r["Risk_Score"], reverse=True
+    )
 
     r_l, r_r = st.columns([1.1, 1])
     with r_l:
-        st.markdown("#### 🏆 Spacecraft Fire Risk Ranking")
+        st.markdown("#### 🏆 Spacecraft Experiment Hazard Ranking")
         render_html("""
         <div style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:0.73rem;color:#ffd180;line-height:1.4;">
-            ⚖️ <b>Scientific Methodology Note:</b> The Composite Hazard Score is an illustrative multi-criteria engineering weighting (40% Spread Rate + 35% Min Ignition O₂ + 25% NASA-STD-6001 Toxicity Index) developed for this comparative dashboard prototype, not an official NASA standard metric.
+            ⚖️ <b>Methodology Note:</b> The Composite Hazard Score is an illustrative multi-criteria weighting (40% Spread Rate + 35% Min Ignition O₂ + 25% Toxicity Index) developed for this educational dashboard — not an official NASA standard. Historical context rows (Apollo 1, Mir, Apollo 13) are excluded from this ranking. For droplet/gaseous experiments where spread rate is N/A, the spread component is set to 0 and the score reflects ignition O₂ and toxicity only.
         </div>
         """)
-        st.caption("Score = 40% Flame Spread + 35% Ignition O₂ + 25% Toxicity")
+        st.caption("Score = 40% Flame Spread + 35% Ignition O₂ + 25% Toxicity | ⚠️ Illustrative — not a NASA metric")
 
         fig_bar = go.Figure(go.Bar(
             x=[r["Risk_Score"] for r in ranked],
@@ -1274,7 +1325,7 @@ with tab4:
         ))
         fig_bar.update_layout(
             yaxis={"categoryorder": "total ascending"},
-            xaxis_title="Composite Hazard Score (0–100)",
+            xaxis_title="Composite Hazard Score (0–100) — Illustrative",
             height=540,
             showlegend=False,
             margin=dict(l=10, r=30, t=10, b=30),
@@ -1284,15 +1335,16 @@ with tab4:
 
     with r_r:
         st.markdown("#### 🌌 3D Multi-Dimensional Fire Hazard Landscape")
-        st.caption("Drag to rotate in 3D: Min O₂ (%) vs. Flame Spread (mm/s) vs. Toxicity Index")
+        st.caption("Drag to rotate in 3D: Min O₂ (%) vs. Flame Spread (mm/s) vs. Toxicity Index. Droplet/gaseous rows without spread data are shown at Spread = 0.")
 
         fig_3d = go.Figure()
         for rl in ["High", "Medium", "Low"]:
-            sub = [r for r in rows if r["Fire_Risk_Level"] == rl]
+            # Only include scorable, non-historical rows
+            sub = [r for r in ranked if r["Fire_Risk_Level"] == rl]
             if not sub: continue
             fig_3d.add_trace(go.Scatter3d(
-                x=[r["Min_Ignition_O2"] for r in sub],
-                y=[min(r["Flame_Spread_Rate"], 20) for r in sub],
+                x=[r["Min_Ignition_O2"] if r["Min_Ignition_O2"] is not None else 0 for r in sub],
+                y=[min(r["Flame_Spread_Rate"], 20) if r["Flame_Spread_Rate"] is not None else 0 for r in sub],
                 z=[r["Toxicity_Index"] for r in sub],
                 mode="markers+text",
                 name=f"{rl} Risk",
@@ -1323,14 +1375,14 @@ with tab4:
         st.plotly_chart(fig_3d, use_container_width=True)
 
     st.markdown("---")
-    st.markdown("#### 📋 Full NASA Hazard Ranking Telemetry Sheet")
+    st.markdown("#### 📋 Full Hazard Ranking Sheet (Experiments Only)")
     rank_tbl = [{
         "Rank": f"#{i+1}",
         "Experiment": r["Experiment_Name"],
         "Severity": r["Fire_Risk_Level"],
         "Composite Hazard Score": r["Risk_Score"],
-        "Spread mm/s": r["Flame_Spread_Rate"],
-        "Min O₂ %": r["Min_Ignition_O2"],
+        "Spread mm/s": r["Flame_Spread_Display"],
+        "Min O₂ %": r["Min_O2_Display"],
         "Tox Index": r["Toxicity_Index"],
         "Gravity Environment": r["Gravity_Environment"],
         "Mission": r["Mission"],
@@ -1344,17 +1396,23 @@ with tab5:
     st.markdown("### ⚖️ Side-by-Side Investigation Comparison")
     st.caption("Select two NASA experiments to analyze head-to-head flammability differences.")
 
-    exp_list = [r["Experiment_Name"] for r in rows]
+    # Only use scorable (non-historical) rows for the VS comparison
+    scorable_rows = [r for r in rows if r["Risk_Score"] is not None]
+    exp_list = [r["Experiment_Name"] for r in scorable_rows]
     if len(exp_list) >= 2:
         c1, c2 = st.columns(2)
         exp_a = c1.selectbox("🔴 Target Investigation A", exp_list, index=0)
         exp_b = c2.selectbox("🔵 Target Investigation B", exp_list, index=min(1, len(exp_list)-1))
 
         if exp_a != exp_b:
-            ra = next(r for r in rows if r["Experiment_Name"] == exp_a)
-            rb = next(r for r in rows if r["Experiment_Name"] == exp_b)
+            ra = next(r for r in scorable_rows if r["Experiment_Name"] == exp_a)
+            rb = next(r for r in scorable_rows if r["Experiment_Name"] == exp_b)
 
             mc1, mc2, mc3 = st.columns([2, 1, 2])
+            # For spread/O2, use 0 as a fallback for N/A rows in comparisons
+            def safe_val(r, fld):
+                v = r[fld]
+                return v if v is not None else 0.0
             metrics = [
                 ("Flame Spread Rate (mm/s)", "Flame_Spread_Rate", True, "{:.1f}"),
                 ("Min Ignition O₂ (%)", "Min_Ignition_O2", False, "{:.1f}"),
@@ -1366,9 +1424,10 @@ with tab5:
                 st.markdown(risk_badge(ra["Fire_Risk_Level"]), unsafe_allow_html=True)
                 st.caption(f"Mission: {ra['Mission']} ({int(ra['Year'])})")
                 for lbl, fld, low_safe, fmt in metrics:
-                    va, vb = ra[fld], rb[fld]
+                    va, vb = safe_val(ra, fld), safe_val(rb, fld)
                     better = va < vb if low_safe else va > vb
-                    st.markdown(f"• **{lbl}:** {'🟢' if better else '🔴'} {fmt.format(va)}")
+                    disp = ra["Flame_Spread_Display"] if fld == "Flame_Spread_Rate" else (ra["Min_O2_Display"] if fld == "Min_Ignition_O2" else fmt.format(va))
+                    st.markdown(f"• **{lbl}:** {'🟢' if better else '🔴'} {disp}")
             with mc2:
                 st.markdown("<br><br>", unsafe_allow_html=True)
                 for _ in metrics:
@@ -1378,23 +1437,24 @@ with tab5:
                 st.markdown(risk_badge(rb["Fire_Risk_Level"]), unsafe_allow_html=True)
                 st.caption(f"Mission: {rb['Mission']} ({int(rb['Year'])})")
                 for lbl, fld, low_safe, fmt in metrics:
-                    va, vb = ra[fld], rb[fld]
+                    va, vb = safe_val(ra, fld), safe_val(rb, fld)
                     better = vb < va if low_safe else vb > va
-                    st.markdown(f"• **{lbl}:** {'🟢' if better else '🔴'} {fmt.format(vb)}")
+                    disp = rb["Flame_Spread_Display"] if fld == "Flame_Spread_Rate" else (rb["Min_O2_Display"] if fld == "Min_Ignition_O2" else fmt.format(vb))
+                    st.markdown(f"• **{lbl}:** {'🟢' if better else '🔴'} {disp}")
 
             st.markdown("---")
             st.markdown("#### 🕸️ Radar Hazard Signature Profile")
 
             cats = ["Flame Spread", "Low-O₂ Ignition Propensity", "Toxicity", "Overall Composite Score"]
             def nv(val, lo, hi): return (val - lo) / (hi - lo) if hi != lo else 0.5
-            va_v = [nv(min(ra["Flame_Spread_Rate"], 20), 0, 20),
-                    1 - nv(min(max(ra["Min_Ignition_O2"], 10), 30), 10, 30),
+            va_v = [nv(min(safe_val(ra, "Flame_Spread_Rate"), 20), 0, 20),
+                    1 - nv(min(max(safe_val(ra, "Min_Ignition_O2"), 10), 30), 10, 30),
                     nv(ra["Toxicity_Index"], 0, 10),
-                    nv(ra["Risk_Score"], 0, 100)]
-            vb_v = [nv(min(rb["Flame_Spread_Rate"], 20), 0, 20),
-                    1 - nv(min(max(rb["Min_Ignition_O2"], 10), 30), 10, 30),
+                    nv(safe_val(ra, "Risk_Score"), 0, 100)]
+            vb_v = [nv(min(safe_val(rb, "Flame_Spread_Rate"), 20), 0, 20),
+                    1 - nv(min(max(safe_val(rb, "Min_Ignition_O2"), 10), 30), 10, 30),
                     nv(rb["Toxicity_Index"], 0, 10),
-                    nv(rb["Risk_Score"], 0, 100)]
+                    nv(safe_val(rb, "Risk_Score"), 0, 100)]
 
             fig_rad = go.Figure()
             for label, vals, color in [(exp_a[:35], va_v, "#ff4d4d"), (exp_b[:35], vb_v, "#00d2ff")]:
@@ -1419,9 +1479,11 @@ with tab5:
             )
             st.plotly_chart(fig_rad, use_container_width=True)
 
-            riskier, safer = (exp_a, exp_b) if ra["Risk_Score"] > rb["Risk_Score"] else (exp_b, exp_a)
-            diff = abs(ra["Risk_Score"] - rb["Risk_Score"])
-            st.info(f"⚠️ **Comparison:** **{riskier}** has a **{diff:.1f}-point higher fire risk** than **{safer}** due to faster flame spread and higher combustion toxicity.")
+            riskier_score = safe_val(ra, "Risk_Score")
+            riskier_b_score = safe_val(rb, "Risk_Score")
+            riskier, safer = (exp_a, exp_b) if riskier_score > riskier_b_score else (exp_b, exp_a)
+            diff = abs(riskier_score - riskier_b_score)
+            st.info(f"⚠️ **Comparison:** **{riskier}** has a **{diff:.1f}-point higher illustrative composite hazard score** than **{safer}** based on the weighted spread/ignition/toxicity formula.")
     else:
         st.warning("Please maintain at least two experiments in your filter selection for head-to-head comparison.")
 

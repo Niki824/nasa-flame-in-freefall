@@ -39,7 +39,7 @@ In microgravity (such as aboard the International Space Station, or future Artem
 The file `combustion_data.csv` was **manually compiled and curated from published NASA technical literature**, not exported as an automated bulk file from the Physical Sciences Informatics (PSI) repository. 
 
 ### Source Documents Used:
-1. **NASA ISS Researcher's Guide to Combustion Science (NASA/TP-2015-218202):** Provided flight overviews, fuel chemistries, hardware constraints, and primary findings for FLEX, FLEX-2, BASS, BASS-II, BRE, and ACME investigations.
+1. **NASA ISS Researcher's Guide to Combustion Science (NP-2015-10-034-JSC):** Provided flight overviews, fuel chemistries, hardware constraints, and primary findings for FLEX, FLEX-2, BASS, BASS-II, BRE (Burning Rate Emulator, a gaseous-fuel sub-investigation of the ACME package), and ACME investigations.
 2. **NASA Glenn Research Center Saffire Flight Reports (Urban, Ferkul, Olson et al., 2016–2022):** Provided large-scale cotton-fiberglass and Nomex flame spread rates, airflow sensitivity data, and exploration atmosphere findings for Saffire-I, II, III, and VI.
 3. **NASA Kibo & CIR Technical Summaries:** Provided reduced-gravity flammability parameters for SoFIE (0.16g Moon simulation) and FLARE (0.38g Mars simulation).
 4. **Official NASA Accident Review Board Records:**
@@ -49,10 +49,14 @@ The file `combustion_data.csv` was **manually compiled and curated from publishe
 
 ### Field-by-Field Origin Breakdown:
 - **`Experiment_Name`, `Fuel_Type`, `Gravity_Environment`, `Oxygen_Concentration`, `Year`, `Mission`, `Historical_Incident`:** Typed directly from the NASA source documents above.
-- **`Flame_Spread_Rate` (mm/s) & `Min_Ignition_O2` (%):** Sourced directly from empirical measurements reported in published NASA mission summaries and flight papers.
+- **`Flame_Spread_Rate` (mm/s):** Sourced directly from empirical measurements reported in published NASA mission summaries for solid-fuel experiments (Saffire series, BASS, BASS-II, Confined Combustion). **Marked N/A** for droplet-combustion experiments (FLEX, FLEX-2, CFI) and gaseous-fuel experiments (ACME, BRE) where flame spread across a surface is not a measured quantity.
+- **`Min_Ignition_O2` (%):** Illustrative extinction-limit thresholds consistent with published experiment papers. **Marked N/A** for Apollo 1 and Apollo 13 (historical accidents, not systematic flammability tests).
 - **`Key_Findings`:** Hand-curated technical summaries of primary findings published by the NASA Principal Investigator teams.
-- **`Toxicity_Index` (1–10, Illustrative Index):** **Raw NASA PSI records do not measure or report a numerical toxicity index.** To bridge combustion physics with life-support safety, we assigned an illustrative 1–10 qualitative severity score based on the material off-gas hazard classifications defined in **NASA-STD-6001B Test 7** (*"Toxic Offgassing Determination and Carbon Monoxide / Hydrogen Cyanide Analysis"*). For example, liquid fuels generating sub-visible formaldehyde receive 7/10, thick PMMA acrylic receives 5–6/10, and burning perchlorate candles producing acrid smoke receive 9/10.
-- **`AI_Summary` & `Safety_Recommendations`:** AI-generated plain-language translations produced by Google Gemini 1.5, conditioned strictly on the factual text of the NASA documents.
+- **`BRE` experiment:** Correctly identified as the **Burning Rate Emulator**, a sub-investigation within the ACME package that uses a gaseous-fuel porous-sphere burner in microgravity. BRE is NOT a solid-fuel test; earlier versions of this CSV incorrectly labelled it "Burning and Suppression of Solids" — this has been corrected.
+- **`Toxicity_Index` (1–10, Illustrative Index):** **Raw NASA PSI records do not measure or report a numerical toxicity index.** To bridge combustion physics with life-support safety, we assigned an illustrative 1–10 qualitative severity score based on the material off-gas hazard classifications defined in **NASA-STD-6001B Test 7** (*"Toxic Offgassing Determination and Carbon Monoxide / Hydrogen Cyanide Analysis"*). For example, liquid fuels generating sub-visible formaldehyde receive 7/10, thick PMMA acrylic receives 5–6/10, and burning perchlorate candles producing acrid smoke receive 9/10. This index is **not** an official NASA metric.
+- **Partial-gravity entries (Lunar/Martian):** The NASA PSI repository **does not currently hold tabulated partial-gravity combustion data**. The simulator's Lunar (0.16g) and Martian (0.38g) modes are **qualitative illustrations** based on the general physical principle that partial gravity produces weak buoyancy effects. SoFIE (designed to study partial gravity) is an active ISS investigation — full results are not yet publicly tabulated. No rows in `combustion_data.csv` claim partial-gravity empirical measurements.
+- **Historical context rows (Apollo 1, Mir, Apollo 13):** Included for narrative context only. These are not scored in the hazard ranking, and no flame spread rate or Min Ignition O₂ applies to them.
+- **`AI_Summary` & `Safety_Recommendations`:** AI-drafted plain-language translations produced by Google Gemini 1.5, conditioned strictly on the factual text of the NASA documents, then reviewed before being stored in the CSV. **No AI model is called at runtime** — the app displays this pre-stored text.
 
 ---
 
@@ -89,11 +93,11 @@ In compliance with NASA Space Apps Challenge submission standards:
 - **What the Model Received (Input):** Verbatim technical findings, mission logs, and experimental parameters extracted from the NASA source documents listed above.
 - **What the Model Returned (Output):**
   1. Plain-English executive summaries (`AI_Summary` in `combustion_data.csv`) that translate academic jargon into accessible explanations.
-  2. Operational crew directives (`Safety_Recommendations` in `combustion_data.csv`) outlining emergency sensor placements and ventilation protocols.
+  2. Operational design-concept crew directives (`Safety_Recommendations` in `combustion_data.csv`) outlining emergency sensor placements and ventilation protocols. These are design ideas and not certified NASA protocols.
   3. Character concept briefs for the cute 3D zero-gravity companion mascots (NOVA AI, Commander Leo, Navigator Zog).
 - **What is Fixed Text or Ordinary Code:**
   - All web interface code (`app.py`), Streamlit widgets, CSS zero-gravity keyframe animations, filtering logic, mathematical scoring formulas, normalizations, and Plotly charts are **fixed text and ordinary Python code**.
-  - **No AI is invoked at runtime** when users view or interact with the dashboard, ensuring 100% deterministic, repeatable behavior with zero hallucination risk.
+  - **No AI model is called at runtime.** The "AI Safety Interpreter" tab (Tab 2) displays the pre-stored `AI_Summary` and `Safety_Recommendations` text from the CSV. NOVA is an illustrated mascot image. The emergency checklist is a fixed design-concept template. This is disclosed prominently in the app itself.
 
 ---
 

@@ -4,12 +4,17 @@
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Niki824%2Fnasa--flame--in--freefall-blue?logo=github)](https://github.com/Niki824/nasa-flame-in-freefall)
 ![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python)
 ![Plotly](https://img.shields.io/badge/Plotly-5.17+-purple?logo=plotly)
-![NASA Data](https://img.shields.io/badge/Data-NASA%20PSI%20Repository-blue?logo=nasa)
+![NASA Data](https://img.shields.io/badge/Data-NASA%20PSI%20Derived-blue?logo=nasa)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 > **NASA Space Apps Challenge 2026** · *Flame in Freefall* Challenge Submission  
 > **Team:** Solo Project by Nikini Edirisinghe  
 > **Live Web Application:** [nasa-flame-in-freefall-fbnzgdeusdbbluisygxsqe.streamlit.app](https://nasa-flame-in-freefall-fbnzgdeusdbbluisygxsqe.streamlit.app/)
+
+---
+
+> ### ⚠️ Notice of Limitation
+> **This application is an educational demonstration and prototype developed for the NASA Space Apps Challenge 2026; it is not certified for operational flight planning or real-world spacecraft fire safety decisions.**
 
 ---
 
@@ -19,93 +24,101 @@ In microgravity (such as aboard the International Space Station, or future Artem
 - **No Buoyant Convection:** Without gravity, warm air does not rise. Flames lack the natural upward draw of fresh oxygen and instead burn as eerie, silent, spherical diffusion domes.
 - **Cool Flames Phenomenon:** Discovered during NASA's FLEX experiments, hydrocarbon droplet fuels can sustain sub-visible, low-temperature combustion long after the visible fire appears out, silently producing toxic carbon monoxide and formaldehyde.
 - **Forced Ventilation Hazards:** Spacecraft life-support fans blowing gentle air (5–15 cm/s) actively sweep away extinguishing soot while replenishing oxygen to the flame front, accelerating flame spread far beyond standard 1-g Earth ground tests.
-- **Data Accessibility:** Over 20+ years of microgravity combustion science is cataloged in the NASA Physical Sciences Informatics (PSI) repository. However, raw academic datasets are difficult for astronauts, flight controllers, and habitat designers to quickly interpret into actionable fire containment protocols.
+- **Data Accessibility:** Over 20+ years of microgravity combustion science is cataloged in NASA archives. However, raw academic reports are difficult for astronauts, flight controllers, and habitat designers to quickly interpret into actionable fire containment protocols.
 
 ---
 
 ## 💡 The Solution: Aerospace Fire Safety Command Center
 
-**Flame in Freefall** is an interactive, browser-based flight safety dashboard that compiles, ranks, visualizes, and synthesizes empirical NASA combustion science into clear, actionable spacecraft fire safety intelligence for the ISS, the Lunar Gateway, Artemis Base Camp, and Mars transit vehicles.
+**Flame in Freefall** is an interactive, browser-based flight safety dashboard that compiles, ranks, visualizes, and synthesizes empirical NASA combustion science into clear, accessible spacecraft fire safety intelligence for the ISS, the Lunar Gateway, Artemis Base Camp, and Mars transit vehicles.
 
 ---
 
-## 🔬 Scientific Methodology & Data Provenance
+## 📊 Data Source & Dataset Provenance
 
-### 1. Dataset Origin (`combustion_data.csv`)
-The dataset contains **17 NASA spaceflight and ground combustion investigations**:
-- **14 Spaceflight Experiments:** Compiled from published NASA Physical Sciences Informatics (PSI) investigations, peer-reviewed flight reports (Saffire I–VI, FLEX, FLEX-2, BRE, ACME, SoFIE, BASS, BASS-II, CFI, FLARE, Confined Combustion), and the *NASA ISS Researcher's Guide to Combustion Science* (NASA/TP-2015-218202).
-- **3 Historical Spaceflight Fire Disasters:** Synthesized from official NASA accident review board reports (Apollo 204 Review Board, Apollo 13 Investigation Board, and NASA History Division Mir space station fire records).
+The file `combustion_data.csv` was **manually compiled and curated from published NASA technical literature**, not exported as an automated bulk file from the Physical Sciences Informatics (PSI) repository. 
 
-| Column | Data Nature | Scientific Source |
-|---|---|---|
-| `Experiment_Name`, `Mission`, `Year` | Empirical Fact | Official NASA Mission flight manifests |
-| `Gravity_Environment`, `Fuel_Type` | Empirical Fact | NASA PSI investigation specifications |
-| `Flame_Spread_Rate` (mm/s) | Empirical Measurement | Published flight telemetry from NASA PSI & Saffire/BRE papers |
-| `Min_Ignition_O2` (%) | Empirical Threshold | Published flammability limit data from NASA-STD-6001 / PSI |
-| `Toxicity_Index` (1–10) | Qualitative Severity Index | Evaluated based on NASA-STD-6001B Test 7 ("Toxic Offgassing") and combustion product chemistry |
-| `Key_Findings` | Empirical Synthesis | Primary conclusions from NASA Principal Investigator publications |
-| `AI_Summary` & `Safety_Recommendations` | AI-Assisted Synthesis | Generated using Google Gemini 1.5 conditioned strictly on NASA technical reports |
+### Source Documents Used:
+1. **NASA ISS Researcher's Guide to Combustion Science (NASA/TP-2015-218202):** Provided flight overviews, fuel chemistries, hardware constraints, and primary findings for FLEX, FLEX-2, BASS, BASS-II, BRE, and ACME investigations.
+2. **NASA Glenn Research Center Saffire Flight Reports (Urban, Ferkul, Olson et al., 2016–2022):** Provided large-scale cotton-fiberglass and Nomex flame spread rates, airflow sensitivity data, and exploration atmosphere findings for Saffire-I, II, III, and VI.
+3. **NASA Kibo & CIR Technical Summaries:** Provided reduced-gravity flammability parameters for SoFIE (0.16g Moon simulation) and FLARE (0.38g Mars simulation).
+4. **Official NASA Accident Review Board Records:**
+   - *Report of Apollo 204 Review Board (NASA SP-138, 1967)*: 100% O₂ flashover dynamics and material flammability tests.
+   - *Report of Apollo 13 Review Board (1970)*: Supercritical cryogenic oxygen tank wiring failure and explosion.
+   - *NASA History Division: Mir Space Station Fire Analysis (1997)*: Solid-fuel perchlorate oxygen candle combustion and toxic smoke generation.
 
-### 2. Composite Fire Hazard Scoring Formula
-In aerospace risk management, evaluating heterogeneous hazards (flame velocity, ignition limits, off-gas toxicity) requires a **Multi-Criteria Decision Analysis (MCDA)** model:
-
-$$\text{Composite Hazard Score} = \left(\frac{\text{Spread Rate}}{20} \times 40\right) + \left[\left(1 - \frac{\text{Min } O_2}{30}\right) \times 35\right] + \left(\frac{\text{Toxicity Index}}{10} \times 25\right)$$
-
-- **Flame Spread Weight (40%):** Spread speed dictates crew egress time and compartment flashover limits.
-- **Ignition Oxygen Weight (35%):** Materials with lower minimum oxygen thresholds present higher accidental ignition risks in exploration atmospheres ($21\%\text{--}34\%\text{ } O_2$).
-- **Toxicity Index Weight (25%):** In sealed spacecraft volumes, smoke and off-gases (CO, HCN, formaldehydes) represent fatal acute hazards before thermal barriers breach.
-> *Scientific Disclosure: This composite weighting is an illustrative engineering multi-criteria utility function developed specifically for comparative dashboard visualization in this prototype. It is not an official NASA standard metric.*
-
-### 3. Qualitative Flame Simulator Model
-Tab 3 features an interactive **Morphing Flame Physics Chamber**. This is an **illustrative mathematical model** calibrated to empirical NASA observations:
-- At $0.00g$ and low airflow, flames form spherical diffusion domes (demonstrating BASS-II quiescent self-extinction and FLEX cool flame behavior).
-- As forced airflow increases ($5\text{--}18\text{ cm/s}$), the flame elongates and tilts according to empirical forced convective heat transfer relationships observed in NASA BRE and Saffire flight trials.
-- At $0.16g$ (Moon) and $0.38g$ (Mars), weak buoyant convective currents are simulated to illustrate partial-gravity flame acceleration along structural materials.
-> *Scientific Disclosure: The chamber renders an illustrative SVG model intended for intuitive conceptual training. For formal aerospace design, flight controllers rely on full 3D Computational Fluid Dynamics (CFD) codes such as NASA Glenn numerical combustion packages.*
+### Field-by-Field Origin Breakdown:
+- **`Experiment_Name`, `Fuel_Type`, `Gravity_Environment`, `Oxygen_Concentration`, `Year`, `Mission`, `Historical_Incident`:** Typed directly from the NASA source documents above.
+- **`Flame_Spread_Rate` (mm/s) & `Min_Ignition_O2` (%):** Sourced directly from empirical measurements reported in published NASA mission summaries and flight papers.
+- **`Key_Findings`:** Hand-curated technical summaries of primary findings published by the NASA Principal Investigator teams.
+- **`Toxicity_Index` (1–10, Illustrative Index):** **Raw NASA PSI records do not measure or report a numerical toxicity index.** To bridge combustion physics with life-support safety, we assigned an illustrative 1–10 qualitative severity score based on the material off-gas hazard classifications defined in **NASA-STD-6001B Test 7** (*"Toxic Offgassing Determination and Carbon Monoxide / Hydrogen Cyanide Analysis"*). For example, liquid fuels generating sub-visible formaldehyde receive 7/10, thick PMMA acrylic receives 5–6/10, and burning perchlorate candles producing acrid smoke receive 9/10.
+- **`AI_Summary` & `Safety_Recommendations`:** AI-generated plain-language translations produced by Google Gemini 1.5, conditioned strictly on the factual text of the NASA documents.
 
 ---
 
-## 🤖 Artificial Intelligence Disclosure
+## ⚖️ Risk Score Methodology & Scaling
 
-In compliance with NASA Space Apps Challenge 2026 rules:
-- **Models Used:** Google Gemini 1.5 Pro & Gemini 1.5 Flash.
-- **What AI Did:**
-  1. **Executive Synthesis (`AI_Summary`):** Translating dense scientific terminology from published NASA reports into plain-English summaries accessible to astronauts and operational engineers.
-  2. **Checklist Generation (`Safety_Recommendations`):** Structuring actionable flight deck procedures and sensor deployment guidelines directly from published NASA findings.
-  3. **Visual Asset Concepting:** Generating prompt briefs for the 3D zero-g mission companions (NOVA AI, Commander Leo, Navigator Zog).
-- **What AI Did NOT Do (Deterministic Code):**
-  - All filtering, mathematical scoring, ranges, data normalization, radar chart geometry, and 3D scatter plots are computed using **100% deterministic Python standard libraries and Plotly**. No hallucinated data or black-box math is used in the telemetry pipelines.
+The Composite Hazard Score (0–100) is **our own engineering choice developed for this demonstration and is NOT an official NASA metric or standard.** NASA safety engineering evaluates materials on independent pass/fail criteria per NASA-STD-6001.
 
----
+### Rationale for the 40 / 35 / 25 Weights:
+- **Flame Spread Rate (40% Weight):** Flame velocity directly determines available crew evacuation time and compartment flashover margins.
+- **Minimum Ignition O₂ (35% Weight):** Materials that ignite at lower oxygen concentrations present a higher likelihood of accidental ignition in elevated-O₂ exploration atmospheres ($21\%\text{--}34\%\text{ }O_2$).
+- **Toxicity Index (25% Weight):** In sealed spacecraft volumes, toxic combustion gases (CO, HCN, formaldehydes) cause incapacitation long before thermal structural failure.
 
-## ✨ Dashboard Features & Architecture
+### Mathematical Scaling to a Common 0–100 Range:
+Each input is normalized and scaled in Python as follows:
 
-```
-NASA Flame in Freefall
-├── 🛸 3D Mission Companions (Sidebar)
-│   ├── 🤖 NOVA AI (Fire Safety Copilot)
-│   ├── 🧑‍🚀 Commander Leo (Zero-G Crew Leader)
-│   └── 🛸 Navigator Zog (Planetary Gravity Observer)
-├── 🛰️ Tab 1: Telemetry Explorer (Dual View: Structured Matrix & Cards)
-├── 🤖 Tab 2: AI Safety Interpreter & Emergency Checklist Generator
-├── 🎛️ Tab 3: Morphing Flame Simulator (Live Interactive Physics Chamber)
-├── 📊 Tab 4: 3D Multi-Dimensional Hazard Landscape & Risk Ranking
-└── ⚖️ Tab 5: Head-to-Head Comparison & Historical Disaster Lessons
-```
+$$\text{Spread Component} = \frac{\min(\text{Flame Spread Rate}, 20)}{20} \times 40$$
+*(Spread rate is capped at 20 mm/s and normalized to contribute 0 to 40 points).*
+
+$$\text{Ignition Component} = \left(1 - \frac{\text{clamp}(\text{Min Ignition } O_2, 10, 30)}{30}\right) \times 35$$
+*(Inverted so that a lower ignition threshold yields a higher risk score, contributing 0 to 35 points).*
+
+$$\text{Toxicity Component} = \frac{\text{Toxicity Index}}{10} \times 25$$
+*(The 1–10 qualitative toxicity index is normalized to contribute 0 to 25 points).*
+
+$$\text{Composite Hazard Score} = \text{Spread Component} + \text{Ignition Component} + \text{Toxicity Component}$$
 
 ---
 
-## 🚀 Local Installation & Setup
+## 🤖 Use of Artificial Intelligence (AI Disclosure)
+
+In compliance with NASA Space Apps Challenge submission standards:
+
+- **Model & Service Used:** Google Gemini 1.5 Pro and Gemini 1.5 Flash accessed via Google AI Studio.
+- **What the Model Received (Input):** Verbatim technical findings, mission logs, and experimental parameters extracted from the NASA source documents listed above.
+- **What the Model Returned (Output):**
+  1. Plain-English executive summaries (`AI_Summary` in `combustion_data.csv`) that translate academic jargon into accessible explanations.
+  2. Operational crew directives (`Safety_Recommendations` in `combustion_data.csv`) outlining emergency sensor placements and ventilation protocols.
+  3. Character concept briefs for the cute 3D zero-gravity companion mascots (NOVA AI, Commander Leo, Navigator Zog).
+- **What is Fixed Text or Ordinary Code:**
+  - All web interface code (`app.py`), Streamlit widgets, CSS zero-gravity keyframe animations, filtering logic, mathematical scoring formulas, normalizations, and Plotly charts are **fixed text and ordinary Python code**.
+  - **No AI is invoked at runtime** when users view or interact with the dashboard, ensuring 100% deterministic, repeatable behavior with zero hallucination risk.
+
+---
+
+## 🎛️ Interactive Visualizations vs. Empirical Data
+
+- **Empirical Visualizations (Tabs 1, 2, 4, 5):** The telemetry matrix, donut charts, sunburst hierarchies, 3D scatter plot, and radar profiles directly display the empirical values compiled in `combustion_data.csv`.
+- **Illustrative Model (Tab 3: Morphing Flame Chamber):** The SVG flame chamber is an **illustrative mathematical model** calibrated to qualitative NASA observations:
+  - At $0.00g$, flames form spherical diffusion domes (BASS-II quiescent extinction and FLEX cool flame behavior).
+  - At higher airflow velocities ($5\text{--}18\text{ cm/s}$), the flame elongates and tilts based on empirical forced convection relationships observed in NASA BRE and Saffire flight trials.
+  - At $0.16g$ (Moon) and $0.38g$ (Mars), weak buoyant convective currents illustrate partial-gravity flame propagation along structural materials.
+  - *This chamber is an intuitive conceptual model; certified spacecraft engineering relies on full 3D Computational Fluid Dynamics (CFD) codes.*
+
+---
+
+## 🚀 Quick Launch (Local Setup)
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/Niki824/nasa-flame-in-freefall.git
 cd nasa-flame-in-freefall
 
-# 2. Install lightweight dependencies (zero C-compilation lockups)
+# 2. Install dependencies (lightweight: zero numpy/pandas compilation locks)
 pip install -r requirements.txt
 
-# 3. Run dashboard locally
+# 3. Launch dashboard
 streamlit run app.py
 ```
 
@@ -113,19 +126,7 @@ The application opens locally at `http://localhost:8501`.
 
 ---
 
-## 🛰️ NASA Official References
-
-1. **NASA Physical Sciences Informatics (PSI) Repository:** [psi.nasa.gov](https://psi.nasa.gov/physci/repo/search?q=combustion)
-2. **NASA Glenn Research Center Combustion Science:** [nasa.gov/glenn/combustion-science](https://www.nasa.gov/glenn/glenn-expertise-space-exploration/physical-sciences-program/combustion-science/)
-3. **NASA ISS Researcher's Guide to Combustion Science (NASA/TP-2015-218202):** [Download PDF](https://www.nasa.gov/missions/station/a-researchers-guide-to-combustion-science/)
-4. **NASA-STD-6001B:** *Flammability, Odor, Offgassing, and Compatibility Requirements and Test Procedures for Materials in Environments that Support Combustion.*
-5. **NASA Apollo 1 Accident Investigation (AS-204):** [NASA SMA Archive](https://sma.nasa.gov/sma-disciplines/accllp/apollo-1)
-6. **NASA Apollo 13 Review Board:** [NASA SMA Archive](https://sma.nasa.gov/sma-disciplines/accllp/apollo-13)
-7. **NASA Mir Space Station Fire Analysis (1997):** [NASA History Record](https://www.nasa.gov/history/25-years-ago-fire-aboard-space-station-mir/)
-
----
-
 ## 📄 License
 
-This project is open-source and released under the [MIT License](LICENSE).
-Built for the **NASA Space Apps Challenge 2026**.
+This project is open-source and licensed under the [MIT License](LICENSE).  
+Copyright (c) 2026 Nikini Edirisinghe.

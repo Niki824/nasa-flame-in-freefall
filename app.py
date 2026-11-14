@@ -1508,7 +1508,8 @@ with tab5:
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align:center;color:#475d84;font-size:0.78rem;padding:18px;border-top:1px solid #141f38;margin-top:30px;">
-    🔥 <b>NASA Flame in Freefall</b> · Space Apps Challenge 2026 · Data from <a href="https://psi.nasa.gov/physci/repo/search?q=combustion" target="_blank" style="color:#00d2ff;text-decoration:none;">NASA PSI</a> &amp; <a href="https://www.nasa.gov/missions/station/a-researchers-guide-to-combustion-science/" target="_blank" style="color:#00d2ff;text-decoration:none;">ISS Combustion Guide</a>
+<div style="text-align:center;color:#475d84;font-size:0.76rem;padding:18px;border-top:1px solid #141f38;margin-top:30px;line-height:1.5;">
+    🔥 <b>NASA Flame in Freefall</b> · Space Apps Challenge 2026 · Derived from NASA Technical Reports &amp; PSI Research<br>
+    <span style="color:#6b82a8;font-size:0.72rem;">⚠️ <i>Notice of Limitation: This educational demonstration is an interactive prototype; it is not certified for operational flight planning or real-world safety decisions.</i></span>
 </div>
 """, unsafe_allow_html=True)
